@@ -1317,7 +1317,7 @@ impl fmt::Debug for FmtBitset {
         for bit in 0..64 {
             // if the `bit`-th bit is set, add it to the debug set
             if self.0 & (1 << bit) != 0 {
-                set.entry(&bit);
+                set.entry(&bit as &dyn fmt::Debug);
             }
         }
         set.finish()

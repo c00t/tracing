@@ -62,9 +62,14 @@ tracing-serde = { path = "../tracing-serde", version = "0.2", optional = true }
 parking_lot = { version = "0.12.1", optional = true }
 chrono = { version = "0.4.26", default-features = false, features = ["clock", "std"], optional = true }
 
-# registry
-sharded-slab = { version = "0.1.4", optional = true }
-thread_local = { version = "1.1.4", optional = true }
+# registry, with dyntls support, may be subscribes doesn't need them to be dyntls compatible.
+# but other crates in engine may need them.
+sharded-slab = { path = "../../sharded-slab", optional = true }
+thread_local = { path = "../../thread_local-rs", optional = true }
+
+# dyntls support, we don't need to support dyntls in subscriber
+# because that it will be referenced only in main executable.
+# dyntls = {path = "../../../../app/dyntls"}
 
 [dev-dependencies]
 tracing = { path = "../tracing", version = "0.2" }
@@ -77,6 +82,9 @@ tracing-futures = { path = "../tracing-futures", version = "0.3", default-featur
 tokio = { version = "1.20.0", features = ["rt", "macros"] }
 # Enable the `time` crate's `macros` feature, for examples.
 time = { version = "0.3.2", features = ["formatting", "macros"] }
+
+# dyntls test support
+dyntls-host = {path = "../../../../app/dyntls_host"}
 
 [badges]
 maintenance = { status = "experimental" }
