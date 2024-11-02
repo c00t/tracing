@@ -9,6 +9,10 @@ use tracing_core::dispatch::*;
 #[cfg(feature = "std")]
 #[test]
 fn set_default_dispatch() {
+    let context = dyntls_host::get();
+    unsafe {
+        context.initialize();
+    }
     set_global_default(Dispatch::new(TestCollectorA)).expect("global dispatch set failed");
     get_default(|current| assert!(current.is::<TestCollectorA>(), "global dispatch get failed"));
 
@@ -24,6 +28,10 @@ fn set_default_dispatch() {
 #[cfg(feature = "std")]
 #[test]
 fn nested_set_default() {
+    let context = dyntls_host::get();
+    unsafe {
+        context.initialize();
+    }
     let _guard = set_default(&Dispatch::new(TestCollectorA));
     get_default(|current| {
         assert!(

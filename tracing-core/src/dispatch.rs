@@ -26,6 +26,10 @@
 //! [`Dispatch`], a cloneable, type-erased reference to a collector. For
 //! example:
 //! ```rust
+//! # let context = dyntls_host::get();
+//! # unsafe {
+//! #     context.initialize();
+//! # }
 //! # pub struct FooCollector;
 //! # use tracing_core::{
 //! #   dispatch, Event, Metadata,
@@ -53,6 +57,10 @@
 //! Then, we can use [`with_default`] to set our `Dispatch` as the default for
 //! the duration of a block:
 //! ```rust
+//! # let context = dyntls_host::get();
+//! # unsafe {
+//! #     context.initialize();
+//! # }
 //! # pub struct FooCollector;
 //! # use tracing_core::{
 //! #   dispatch, Event, Metadata,
@@ -90,6 +98,10 @@
 //! set a `Dispatch` as the default for all threads, for the lifetime of the
 //! program. For example:
 //! ```rust
+//! # let context = dyntls_host::get();
+//! # unsafe {
+//! #     context.initialize();
+//! # }
 //! # pub struct FooCollector;
 //! # use tracing_core::{
 //! #   dispatch, Event, Metadata,
@@ -146,6 +158,7 @@ use core::{
     sync::atomic::{AtomicBool, AtomicUsize, Ordering},
 };
 
+use std::sync::Mutex;
 #[cfg(feature = "std")]
 use std::{
     cell::{Cell, RefCell, RefMut},
@@ -204,37 +217,64 @@ enum Kind<T> {
 }
 
 #[cfg(feature = "std")]
-thread_local! {
-    static CURRENT_STATE: State = const {
-        State {
-            default: RefCell::new(None),
-            can_enter: Cell::new(true),
-        }
+// thread_local! {
+//     static CURRENT_STATE: State = const {
+//         State {
+//             default: RefCell::new(None),
+//             can_enter: Cell::new(true),
+//         }
+//     };
+// }
+dyntls::thread_local! {
+    static CURRENT_STATE: State = State {
+        default: RefCell::new(None),
+        can_enter: Cell::new(true),
     };
 }
 
-static EXISTS: AtomicBool = AtomicBool::new(false);
-static GLOBAL_INIT: AtomicUsize = AtomicUsize::new(UNINITIALIZED);
+dyntls::lazy_static! {
+    static ref EXISTS: AtomicBool = AtomicBool::new(false);
+    static ref GLOBAL_INIT: AtomicUsize = AtomicUsize::new(UNINITIALIZED);
+}
+
+// static EXISTS: AtomicBool = AtomicBool::new(false);
+// static GLOBAL_INIT: AtomicUsize = AtomicUsize::new(UNINITIALIZED);
 
 #[cfg(feature = "std")]
-static SCOPED_COUNT: AtomicUsize = AtomicUsize::new(0);
+// static SCOPED_COUNT: AtomicUsize = AtomicUsize::new(0);
+dyntls::lazy_static! {
+    static ref SCOPED_COUNT: AtomicUsize = AtomicUsize::new(0);
+}
 
 const UNINITIALIZED: usize = 0;
 const INITIALIZING: usize = 1;
 const INITIALIZED: usize = 2;
 
-static mut GLOBAL_DISPATCH: Dispatch = Dispatch {
-    #[cfg(feature = "alloc")]
-    collector: Kind::Global(&NO_COLLECTOR),
-    #[cfg(not(feature = "alloc"))]
-    collector: &NO_COLLECTOR,
-};
+// static mut GLOBAL_DISPATCH: Dispatch = Dispatch {
+//     #[cfg(feature = "alloc")]
+//     collector: Kind::Global(&NO_COLLECTOR),
+//     #[cfg(not(feature = "alloc"))]
+//     collector: &NO_COLLECTOR,
+// };
+
+dyntls::lazy_static! {
+    static ref GLOBAL_DISPATCH: Cell<Dispatch> = Cell::new(Dispatch {
+        #[cfg(feature = "alloc")]
+        collector: Kind::Global(&NO_COLLECTOR),
+        #[cfg(not(feature = "alloc"))]
+        collector: &NO_COLLECTOR,
+    });
+}
+
+// Note: no need to dyntls it, it's a placeholder static
 static NONE: Dispatch = Dispatch {
     #[cfg(feature = "alloc")]
     collector: Kind::Global(&NO_COLLECTOR),
     #[cfg(not(feature = "alloc"))]
     collector: &NO_COLLECTOR,
 };
+
+// Note: no need to dyntls it, it's a placeholder static
 static NO_COLLECTOR: NoCollector = NoCollector::new();
 
 /// The dispatch state of a thread.
@@ -356,9 +396,10 @@ pub fn set_global_default(dispatcher: Dispatch) -> Result<(), SetGlobalDefaultEr
         #[cfg(not(feature = "alloc"))]
         let collector = dispatcher.collector;
 
-        unsafe {
-            GLOBAL_DISPATCH = Dispatch { collector };
-        }
+        // unsafe {
+        //     *GLOBAL_DISPATCH = Dispatch { collector };
+        // }
+        GLOBAL_DISPATCH.set(Dispatch { collector });
         GLOBAL_INIT.store(INITIALIZED, Ordering::SeqCst);
         EXISTS.store(true, Ordering::Release);
         Ok(())
@@ -510,8 +551,11 @@ pub(crate) fn get_global() -> &'static Dispatch {
     unsafe {
         // This is safe given the invariant that setting the global dispatcher
         // also sets `GLOBAL_INIT` to `INITIALIZED`.
-        #[allow(static_mut_refs)]
-        &GLOBAL_DISPATCH
+        // let const_ref = &*GLOBAL_DISPATCH.lock().unwrap() as *const Dispatch;
+        // return unsafe {
+        //     &*const_ref
+        // };
+        &*GLOBAL_DISPATCH.as_ptr()
     }
 }
 
@@ -555,6 +599,10 @@ impl Dispatch {
     /// a static. For example:
     ///
     /// ```rust
+    /// # let context = dyntls_host::get();
+    /// # unsafe {
+    /// #     context.initialize();
+    /// # }
     /// struct MyCollector {
     ///    // ...
     /// }
@@ -924,6 +972,10 @@ impl WeakDispatch {
     /// ## Examples
     ///
     /// ```
+    /// # let context = dyntls_host::get();
+    /// # unsafe {
+    /// #     context.initialize();
+    /// # }
     /// # use tracing_core::collect::NoCollector;
     /// # use tracing_core::dispatch::Dispatch;
     /// static COLLECTOR: NoCollector = NoCollector::new();
@@ -1077,12 +1129,20 @@ mod test {
 
     #[test]
     fn dispatch_is() {
+        let context = dyntls_host::get();
+        unsafe {
+            context.initialize();
+        }
         let dispatcher = Dispatch::from_static(&NO_COLLECTOR);
         assert!(dispatcher.is::<NoCollector>());
     }
 
     #[test]
     fn dispatch_downcasts() {
+        let context = dyntls_host::get();
+        unsafe {
+            context.initialize();
+        }
         let dispatcher = Dispatch::from_static(&NO_COLLECTOR);
         assert!(dispatcher.downcast_ref::<NoCollector>().is_some());
     }
@@ -1108,6 +1168,10 @@ mod test {
     #[test]
     #[cfg(feature = "std")]
     fn events_dont_infinite_loop() {
+        let context = dyntls_host::get();
+        unsafe {
+            context.initialize();
+        }
         // This test ensures that an event triggered within a collector
         // won't cause an infinite loop of events.
         struct TestCollector;
@@ -1151,6 +1215,10 @@ mod test {
     #[test]
     #[cfg(feature = "std")]
     fn spans_dont_infinite_loop() {
+        let context = dyntls_host::get();
+        unsafe {
+            context.initialize();
+        }
         // This test ensures that a span created within a collector
         // won't cause an infinite loop of new spans.
 
@@ -1200,6 +1268,10 @@ mod test {
 
     #[test]
     fn default_no_collector() {
+        let context = dyntls_host::get();
+        unsafe {
+            context.initialize();
+        }
         let default_dispatcher = Dispatch::default();
         assert!(default_dispatcher.is::<NoCollector>());
     }
@@ -1207,6 +1279,10 @@ mod test {
     #[cfg(feature = "std")]
     #[test]
     fn default_dispatch() {
+        let context = dyntls_host::get();
+        unsafe {
+            context.initialize();
+        }
         struct TestCollector;
         impl Collect for TestCollector {
             fn enabled(&self, _: &Metadata<'_>) -> bool {

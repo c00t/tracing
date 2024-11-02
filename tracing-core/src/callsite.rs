@@ -178,10 +178,16 @@ mod inner {
         dispatchers: RwLock<Dispatchers>,
     }
 
-    static REGISTRY: Lazy<Registry> = Lazy::new(|| Registry {
-        callsites: LinkedList::new(),
-        dispatchers: RwLock::new(Vec::new()),
-    });
+    dyntls::lazy_static! {
+        static ref REGISTRY: Registry = Registry {
+            callsites: LinkedList::new(),
+            dispatchers: RwLock::new(Vec::new()),
+        };
+    }
+    // static REGISTRY: Lazy<Registry> = Lazy::new(|| Registry {
+    //     callsites: LinkedList::new(),
+    //     dispatchers: RwLock::new(Vec::new()),
+    // });
 
     /// Clear and reregister interest on every [`Callsite`]
     ///

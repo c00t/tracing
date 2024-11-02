@@ -36,6 +36,11 @@ maintenance = { status = "actively-developed" }
 
 [dependencies]
 once_cell = { version = "1.13.0", optional = true }
+# add dyntls support
+dyntls = {path = "../../../../app/dyntls"}
+
+[dev-dependencies]
+dyntls-host = {path = "../../../../app/dyntls_host"}
 
 [package.metadata.docs.rs]
 all-features = true

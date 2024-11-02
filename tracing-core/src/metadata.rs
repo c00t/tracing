@@ -243,7 +243,9 @@ pub struct LevelFilter(Option<Level>);
 #[derive(Clone, Debug)]
 pub struct ParseLevelFilterError(());
 
-static MAX_LEVEL: AtomicUsize = AtomicUsize::new(LevelFilter::OFF_USIZE);
+dyntls::lazy_static! {
+    static ref MAX_LEVEL: AtomicUsize = AtomicUsize::new(LevelFilter::OFF_USIZE);
+}
 
 // ===== impl Metadata =====
 
@@ -1053,6 +1055,10 @@ mod tests {
 
     #[test]
     fn level_from_str() {
+        let context = dyntls_host::get();
+        unsafe {
+            context.initialize();
+        }
         assert_eq!("error".parse::<Level>().unwrap(), Level::ERROR);
         assert_eq!("4".parse::<Level>().unwrap(), Level::DEBUG);
         assert!("0".parse::<Level>().is_err())
@@ -1060,6 +1066,10 @@ mod tests {
 
     #[test]
     fn filter_level_conversion() {
+        let context = dyntls_host::get();
+        unsafe {
+            context.initialize();
+        }
         let mapping = [
             (LevelFilter::OFF, None),
             (LevelFilter::ERROR, Some(Level::ERROR)),
@@ -1085,6 +1095,10 @@ mod tests {
 
     #[test]
     fn level_filter_is_usize_sized() {
+        let context = dyntls_host::get();
+        unsafe {
+            context.initialize();
+        }
         assert_eq!(
             mem::size_of::<LevelFilter>(),
             mem::size_of::<usize>(),
@@ -1094,6 +1108,10 @@ mod tests {
 
     #[test]
     fn level_filter_reprs() {
+        let context = dyntls_host::get();
+        unsafe {
+            context.initialize();
+        }
         let mapping = [
             (LevelFilter::OFF, LevelInner::Error as usize + 1),
             (LevelFilter::ERROR, LevelInner::Error as usize),

@@ -4,6 +4,10 @@ use common::*;
 use tracing_core::dispatch::*;
 #[test]
 fn global_dispatch() {
+    let context = dyntls_host::get();
+    unsafe {
+        context.initialize();
+    }
     static TEST: TestCollectorA = TestCollectorA;
     set_global_default(Dispatch::from_static(&TEST)).expect("global dispatch set failed");
     get_default(|current| assert!(current.is::<TestCollectorA>(), "global dispatch get failed"));
