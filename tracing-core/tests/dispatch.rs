@@ -6,6 +6,10 @@ use tracing_core::dispatcher::*;
 
 #[test]
 fn set_default_dispatch() {
+    let context = dyntls_host::get();
+    unsafe {
+        context.initialize();
+    }
     set_global_default(Dispatch::new(TestSubscriberA)).expect("global dispatch set failed");
     get_default(|current| {
         assert!(
@@ -30,6 +34,10 @@ fn set_default_dispatch() {
 
 #[test]
 fn nested_set_default() {
+    let context = dyntls_host::get();
+    unsafe {
+        context.initialize();
+    }
     let _guard = set_default(&Dispatch::new(TestSubscriberA));
     get_default(|current| {
         assert!(

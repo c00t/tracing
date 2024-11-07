@@ -7,6 +7,10 @@ use tracing_core::{
 
 #[test]
 fn metadata_macro_api() {
+    let context = dyntls_host::get();
+    unsafe {
+        context.initialize();
+    }
     // This test should catch any inadvertent breaking changes
     // caused by changes to the macro.
     struct TestCallsite;

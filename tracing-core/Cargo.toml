@@ -35,6 +35,10 @@ maintenance = { status = "actively-developed" }
 
 [dependencies]
 once_cell = { version = "1.13.0", optional = true }
+dyntls = {path = "../../../../app/dyntls"}
+
+[dev-dependencies]
+dyntls-host = {path = "../../../../app/dyntls_host"}
 
 [target.'cfg(tracing_unstable)'.dependencies]
 valuable = { version = "0.1.0", optional = true, default-features = false }

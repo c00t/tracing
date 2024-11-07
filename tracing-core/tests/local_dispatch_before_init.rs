@@ -12,6 +12,10 @@ use tracing_core::{
 /// - https://github.com/tokio-rs/tracing/issues/2436
 #[test]
 fn local_dispatch_before_init() {
+    let context = dyntls_host::get();
+    unsafe {
+        context.initialize();
+    }
     dispatcher::get_default(|current| assert!(dbg!(current).is::<NoSubscriber>()));
 
     // Temporarily override the default dispatcher with a scoped dispatcher.
