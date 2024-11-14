@@ -533,8 +533,7 @@ mod dispatchers {
     }
 
     dyntls::lazy_static! {
-        static ref LOCKED_DISPATCHERS: Lazy<RwLock<Vec<dispatcher::Registrar>>> =
-            Lazy::new(Default::default);
+        static ref LOCKED_DISPATCHERS: RwLock<Vec<dispatcher::Registrar>> = Default::default();
     }
 
     pub(super) enum Rebuilder<'a> {
